@@ -1,7 +1,4 @@
 release: all
-	bin/prxEncrypter $(TARGET).prx
-	pack-pbp $(EXTRA_TARGETS) PARAM.SFO icon0.png NULL NULL NULL NULL data.psp NULL
-	rm -f data.psp
 	rm -f downgrade_ctrl.h
 	rm -f downgrade660_ctrl.h
 
@@ -18,8 +15,10 @@ LIBS = -lpsppower
 
 PSP_FW_VERSION = 271
 
+ENCRYPT = 1
 EXTRA_TARGETS = EBOOT.PBP
 PSP_EBOOT_TITLE = Chronoswitch Downgrader
+PSP_EBOOT_ICON = icon0.png
 
 BUILD_PRX = 1
 

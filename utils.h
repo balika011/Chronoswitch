@@ -7,9 +7,9 @@
 #ifndef __UTILS__H__
 #define __UTILS__H__
 
-#define MAKE_JUMP(a, f)					_sw(0x08000000 | (((u32)(f) >> 2)  & 0x03ffffff), a)
-#define MAKE_CALL(a, f)					_sw(0x0C000000 | (((u32)(f) >> 2)  & 0x03ffffff), a)
-#define REDIRECT_FUNCTION(a, f) 		{ u32 address = a; _sw(0x08000000 | (((u32)(f) >> 2)  & 0x03ffffff), address);  _sw(0, address+4); }
+#define MAKE_JUMP(a, f)			_sw(0x08000000 | (((u32)(f) >> 2)  & 0x03ffffff), a)
+#define MAKE_CALL(a, f)			_sw(0x0C000000 | (((u32)(f) >> 2)  & 0x03ffffff), a)
+#define REDIRECT_FUNCTION(a, f) 	{ MAKE_JUMP(a, f);  _sw(0, a + 4); }
 #define MAKE_RELATIVE_BRANCH(a, f, t)	_sw((0x10000000 | ((((f - a) >> 2) - 1) & 0xFFFF)), a + t)
 
 #define FIRMWARE_VERSION_631	(0x06030110)
@@ -19,8 +19,11 @@
 #define FIRMWARE_VERSION_660	(0x06060010)
 #define FIRMWARE_VERSION_661	(0x06060110)
 
-#define PSPGO_UPDATER_PATH	"ef0:/PSP/GAME/UPDATE/EBOOT.PBP"
-#define OTHER_UPDATER_PATH	"ms0:/PSP/GAME/UPDATE/EBOOT.PBP"
+#define PATH_MEMORY_STICK	"ms0:/"
+#define PATH_EMBEDDED_FLASH	"ef0:/"
+#define PATH_UPDATER		"PSP/GAME/UPDATE/EBOOT.PBP"
+#define OTHER_UPDATER_PATH	(PATH_MEMORY_STICK PATH_UPDATER)
+#define PSPGO_UPDATER_PATH	(PATH_EMBEDDED_FLASH PATH_UPDATER)
 
 #define printf pspDebugScreenPrintf
 

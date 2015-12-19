@@ -7,18 +7,25 @@
 #ifndef __UTILS__H__
 #define __UTILS__H__
 
-#define MAKE_JUMP(a, f)					_sw(0x08000000 | (((u32)(f) >> 2)  & 0x03ffffff), a)
-#define MAKE_CALL(a, f)					_sw(0x0C000000 | (((u32)(f) >> 2)  & 0x03ffffff), a)
-#define REDIRECT_FUNCTION(a, f) 		{ u32 address = a; _sw(0x08000000 | (((u32)(f) >> 2)  & 0x03ffffff), address);  _sw(0, address+4); }
+#define MAKE_JUMP(a, f)		_sw(0x08000000 | (((u32)(f) >> 2)  & 0x03ffffff), a)
+#define MAKE_CALL(a, f)		_sw(0x0C000000 | (((u32)(f) >> 2)  & 0x03ffffff), a)
+#define REDIRECT_FUNCTION(a, f)	{ MAKE_JUMP(a, f);  _sw(0, a + 4); }
 
 #define KERNEL_HIJACK_FUNCTION(a, f, ptr)	{ \
-											static u32 patch_buffer[3]; \
-											_sw(_lw(a + 0x00), (u32)patch_buffer + 0x00); \
-											_sw(_lw(a + 0x04), (u32)patch_buffer + 0x08);\
-											MAKE_JUMP((u32)patch_buffer + 0x04, a + 0x08); \
-											REDIRECT_FUNCTION(a, f); \
-											ptr = (void *)patch_buffer; \
-										}
+	static u32 patch_buffer[3]; \
+	_sw(_lw(a + 0x00), (u32)patch_buffer + 0x00); \
+	_sw(_lw(a + 0x04), (u32)patch_buffer + 0x08); \
+	MAKE_JUMP((u32)patch_buffer + 0x04, a + 0x08); \
+	REDIRECT_FUNCTION(a, f); \
+	ptr = (void *)patch_buffer; \
+}
+
+#define PATH_MEMORY_STICK	"ms0:/"
+#define PATH_EMBEDDED_FLASH	"ef0:/"
+#define PATH_UPDATER		"PSP/GAME/UPDATE/EBOOT.PBP"
+#define OTHER_UPDATER_PATH	(PATH_MEMORY_STICK PATH_UPDATER)
+#define PSPGO_UPDATER_PATH	(PATH_EMBEDDED_FLASH PATH_UPDATER)
+
 /**
 	Clears both the instruction and data caches
 */

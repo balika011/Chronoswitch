@@ -87,7 +87,7 @@ int delete_resume_game(void)
 	return pspIoClose(fd);
 }
 
-int patch_loadexec_phat(void)
+int patch_loadexec(void)
 {
 	/* Find the LoadExec */
 	SceModule2 *mod = pspKernelFindModuleByName("sceLoadExec");
@@ -95,34 +95,8 @@ int patch_loadexec_phat(void)
 	if(g_devkit_version == FIRMWARE_VERSION_638 || g_devkit_version == FIRMWARE_VERSION_639 || g_devkit_version == FIRMWARE_VERSION_660 || g_devkit_version == FIRMWARE_VERSION_661)
 	{
 		/* Patch the reboot process */
-		MAKE_CALL(mod->text_addr + 0x2DAC, RebootEntryPatched); //6.38		
-		/* get past the userlevel check */
-		MAKE_RELATIVE_BRANCH(0x23D0, 0x2418, mod->text_addr); //6.38
-	}
-	else
-	{
-		/* Patch the reboot process */
-		MAKE_CALL(mod->text_addr + 0x2D94, RebootEntryPatched); //6.31/6.35
-		
-		/* get past the userlevel check */
-		MAKE_RELATIVE_BRANCH(0x23B8, 0x2400, mod->text_addr); //6.31/6.35
-	}
-	
-	KClearCaches();
-	
-	/* just return 0 */
-	return pspKernelLoadExecVSHMs1(OTHER_UPDATER_PATH, &g_exec_param);
-}
+		MAKE_CALL(mod->text_addr + 0x2DAC, RebootEntryPatched); //6.38
 
-int patch_loadexec_slim(void)
-{
-	/* Find the LoadExec */
-	SceModule2 *mod = pspKernelFindModuleByName("sceLoadExec");
-	
-	if(g_devkit_version == FIRMWARE_VERSION_638 || g_devkit_version == FIRMWARE_VERSION_639 || g_devkit_version == FIRMWARE_VERSION_660 || g_devkit_version == FIRMWARE_VERSION_661)
-	{
-		/* Patch the reboot process */
-		MAKE_CALL(mod->text_addr + 0x2DAC, RebootEntryPatched); //6.38		
 		/* get past the userlevel check */
 		MAKE_RELATIVE_BRANCH(0x23D0, 0x2418, mod->text_addr); //6.38
 	}
@@ -130,68 +104,15 @@ int patch_loadexec_slim(void)
 	{
 		/* Patch the reboot process */
 		MAKE_CALL(mod->text_addr + 0x2D94, RebootEntryPatched); //6.31/6.35
-		
-		/* get past the userlevel check */
-		MAKE_RELATIVE_BRANCH(0x23B8, 0x2400, mod->text_addr); //6.31/6.35
-	}
-	
-	KClearCaches();
-	
-	/* just return 0 */
-	return pspKernelLoadExecVSHMs1(OTHER_UPDATER_PATH, &g_exec_param);
-}
 
-int patch_loadexec_3000(void)
-{
-	/* Find the LoadExec */
-	SceModule2 *mod = pspKernelFindModuleByName("sceLoadExec");
-	
-	if(g_devkit_version == FIRMWARE_VERSION_638 || g_devkit_version == FIRMWARE_VERSION_639 || g_devkit_version == FIRMWARE_VERSION_660 || g_devkit_version == FIRMWARE_VERSION_661)
-	{
-		/* Patch the reboot process */
-		MAKE_CALL(mod->text_addr + 0x2DAC, RebootEntryPatched); //6.38		
-		/* get past the userlevel check */
-		MAKE_RELATIVE_BRANCH(0x23D0, 0x2418, mod->text_addr); //6.38
-	}
-	else
-	{
-		/* Patch the reboot process */
-		MAKE_CALL(mod->text_addr + 0x2D94, RebootEntryPatched); //6.31/6.35
-		
-		/* get past the userlevel check */
+		/* get past the userlevel checks for VSH */
 		MAKE_RELATIVE_BRANCH(0x23B8, 0x2400, mod->text_addr); //6.31/6.35
 	}
-	
-	KClearCaches();
-	
-	/* just return 0 */
-	return pspKernelLoadExecVSHMs1(OTHER_UPDATER_PATH, &g_exec_param);
-}
 
-int patch_loadexec_4000(void)
-{
-	/* Find the LoadExec */
-	SceModule2 *mod = pspKernelFindModuleByName("sceLoadExec");
-	
-	if(g_devkit_version == FIRMWARE_VERSION_638 || g_devkit_version == FIRMWARE_VERSION_639 || g_devkit_version == FIRMWARE_VERSION_660 || g_devkit_version == FIRMWARE_VERSION_661)
-	{
-		/* Patch the reboot process */
-		MAKE_CALL(mod->text_addr + 0x2DAC, RebootEntryPatched); //6.38		
-		/* get past the userlevel check */
-		MAKE_RELATIVE_BRANCH(0x23D0, 0x2418, mod->text_addr); //6.38
-	}
-	else
-	{
-		/* Patch the reboot process */
-		MAKE_CALL(mod->text_addr + 0x2D94, RebootEntryPatched); //6.31/6.35
-		
-		/* get past the userlevel check */
-		MAKE_RELATIVE_BRANCH(0x23B8, 0x2400, mod->text_addr); //6.31/6.35
-	}
-	
+	/* clear the caches */
 	KClearCaches();
-	
-	/* just return 0 */
+
+	/* reboot into the updater */
 	return pspKernelLoadExecVSHMs1(OTHER_UPDATER_PATH, &g_exec_param);
 }
 
@@ -204,7 +125,7 @@ int patch_loadexec_pspgo(void)
 	{
 		/* Patch the reboot process */
 		MAKE_CALL(mod->text_addr + 0x2FF8, RebootEntryPatched); //6.38
-		
+
 		/* get past the userlevel checks for VSH */
 		MAKE_RELATIVE_BRANCH(0x2624, 0x266C, mod->text_addr); //6.31/6.35
 	}
@@ -212,35 +133,16 @@ int patch_loadexec_pspgo(void)
 	{
 		/* Patch the reboot process */
 		MAKE_CALL(mod->text_addr + 0x2FE0, RebootEntryPatched); //6.31/6.35
-		
+
 		/* get past the userlevel checks for VSH */
 		MAKE_RELATIVE_BRANCH(0x260C, 0x2658, mod->text_addr); //6.31/6.35
 	}
-	
+
 	/* clear the caches */
 	KClearCaches();
 
 	/* reboot into the updater */
 	return pspKernelLoadExecVSHEf1(PSPGO_UPDATER_PATH, &g_exec_param);
-}
-
-int patch_loadexec_street(void)
-{
-	/* Find the LoadExec */
-	SceModule2 *mod = pspKernelFindModuleByName("sceLoadExec");
-	
-	if(g_devkit_version == FIRMWARE_VERSION_660 || g_devkit_version == FIRMWARE_VERSION_661)
-	{
-		/* Patch the reboot process */
-		MAKE_CALL(mod->text_addr + 0x2DAC, RebootEntryPatched); //6.38		
-		/* get past the userlevel check */
-		MAKE_RELATIVE_BRANCH(0x23D0, 0x2418, mod->text_addr); //6.38
-	}
-	
-	KClearCaches();
-	
-	/* just return 0 */
-	return pspKernelLoadExecVSHMs1(OTHER_UPDATER_PATH, &g_exec_param);
 }
 
 int launch_updater(void)
@@ -249,12 +151,17 @@ int launch_updater(void)
 	
 	int res = -1;
 	
+	/* get the model */
+	u32 model = pspKernelGetModel();
+	if(model == 6 || model == 8)
+		model = 3;
+	
 	/* clear our param */
 	memset(&g_exec_param, 0, sizeof(struct SceKernelLoadExecVSHParam));
 	
 	/* fill the field */
 	g_exec_param.size = sizeof(struct SceKernelLoadExecVSHParam);
-	g_exec_param.argp = (pspKernelGetModel() == 4) ? (PSPGO_UPDATER_PATH) : (OTHER_UPDATER_PATH);
+	g_exec_param.argp = (model == 4) ? (PSPGO_UPDATER_PATH) : (OTHER_UPDATER_PATH);
 	g_exec_param.args = strlen(g_exec_param.argp) + 1;
 	g_exec_param.key = "updater";
 	g_exec_param.vshmain_args_size = 0;
@@ -263,61 +170,23 @@ int launch_updater(void)
 	g_exec_param.unk4 = 0;
 	g_exec_param.unk5 = 0x10000;
 	
-	/* get the model */
-	u32 model = pspKernelGetModel();
-	
-	if(model == 6 || model == 8)
-	{
-		model = 3;
-	}
-	
 	/* launch a loadexec patch depending on model */
 	switch (model)
 	{
-		/* PSP PHAT */
-		case 0:
+		case 0: /* PSP PHAT */
+		case 1: /* PSP SLIM */
+		case 2: /* PSP 3000 */
+		case 3: /* PSP 3000v2 */
+		case 10: /* PSP E1000 (Street) */
 		{
-			/* launch the updater and patch reboot */
-			res = patch_loadexec_phat();
+			res = patch_loadexec();
 			break;
 		}
 		
-		/* PSP SLIM */
-		case 1:
-		{
-			/* launch the updater and patch reboot */
-			res = patch_loadexec_slim();
-			break;
-		}
-		
-		/* PSP 3000 */
-		case 2:
-		{
-			/* launch the updater and patch reboot */
-			res = patch_loadexec_3000();
-			break;
-		}
-		
-		/* PSP 4000 */
-		case 3:
-		{
-			/* launch the updater and patch reboot */
-			res = patch_loadexec_4000();
-			break;
-		}
-		
-		/* PSP Go */
-		case 4:
+		case 4: /* PSP N1000 (Go) */
 		{
 			/* launch the updater and patch reboot */
 			res = patch_loadexec_pspgo();
-			break;
-		}
-
-		/* PSP E-1000 (Street) */
-		case 10:
-		{
-			res = patch_loadexec_street();
 			break;
 		}
 	}

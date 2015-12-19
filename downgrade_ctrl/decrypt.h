@@ -55,7 +55,7 @@ typedef struct
 	u16 overlap_size;	//0x7E
 	u8 key_data[0x30];	//0x80
 	u32 comp_size;		//0xB0
-	int _80;			//0xB4
+	int unk_80;			//0xB4
 	u32 unk_B8;			//0xB8
 	u32 unk_BC;			//0xBC
 	u8 key_data2[0x10];	//0xC0

@@ -201,7 +201,7 @@ static int Scramble(u32 *buf, u32 size, u32 code)
 	return 0;
 }
 
-static int DecryptPRX1(const u8* pbIn, u8* pbOut, int cbTotal, u32 tag)
+static int DecryptPRX1(const u8* pbIn, u8* pbOut, int cbTotal, u32 tag, int useECDSA)
 {
 	int i, retsize;
 	u8 bD0[0x80], b80[0x50], b00[0x80], bB0[0x20];
@@ -250,7 +250,10 @@ static int DecryptPRX1(const u8* pbIn, u8* pbOut, int cbTotal, u32 tag)
     memcpy(buffer1+0xD0, b00, 0x80);
     if (pti->codeExtra != 0)
         ExtraV2Mangle(buffer1+0x10, pti->codeExtra);
-    memcpy(pbOut+0x40 /* 0x2C+20 */, buffer1+0x40, 0x40);
+	if (useECDSA)
+		memcpy(pbOut+0x40 /* 0x2C+20 */, buffer1+0x40, 0x70);
+	else
+		memcpy(pbOut+0x40 /* 0x2C+20 */, buffer1+0x40, 0x40);
 
     int ret;
     int iXOR;
@@ -267,7 +270,10 @@ static int DecryptPRX1(const u8* pbIn, u8* pbOut, int cbTotal, u32 tag)
     for (iXOR = 0x6F; iXOR >= 0; iXOR--)
         pbOut[0x40+iXOR] = pbOut[0x2C+iXOR] ^ pti->key[0x20+iXOR];
 
-    memset(pbOut+0x80, 0, 0x30); // $40 bytes kept, clean up
+	if (useECDSA)
+		memset(pbOut+0xA0, 0, 0x10); // $40 bytes kept, clean up
+	else
+		memset(pbOut+0x80, 0, 0x30); // $40 bytes kept, clean up
     pbOut[0xA0] = 1;
     // copy unscrambled parts from header
     memcpy(pbOut+0xB0, bB0, 0x20); // file size + lots of zeros
@@ -278,8 +284,21 @@ static int DecryptPRX1(const u8* pbIn, u8* pbOut, int cbTotal, u32 tag)
     ret = sceUtilsBufferCopyWithRange(pbOut, cbTotal, pbOut+0x40, cbTotal-0x40, 0x1);
     if (ret != 0)
     {
-        Kprintf("mangle#1 returned $%x\n", ret);
-        return -1;
+		if (useECDSA)
+		{
+			/* set ECDSA flag */
+			pbOut[0xA4] = 1;
+		
+			/* attempt decrypt */
+			ret = sceUtilsBufferCopyWithRange(pbOut, cbTotal, pbOut+0x40, cbTotal-0x40, 0x1);
+		}
+		
+		/* check for error */
+		if (ret != 0)
+		{
+			Kprintf("mangle#1 returned $%x\n", ret);
+			return -1;
+		}
     }
 
     // return cbTotal - 0x150; // rounded up size
@@ -519,28 +538,28 @@ u8 keys505_1[16] =
 	0xD2, 0x61, 0x61, 0xFE, 0x14, 0xEE, 0xAA, 0x11
 };
 
-/* for psp 2000 file table and ipl pre-decryption */
+/* for PSP 2000 file table and ipl pre-decryption */
 u8 keys02G_E[0x10] = 
 {
 	0x9D, 0x09, 0xFD, 0x20, 0xF3, 0x8F, 0x10, 0x69, 
 	0x0D, 0xB2, 0x6F, 0x00, 0xCC, 0xC5, 0x51, 0x2E
 };
 
-/* for psp 3000 file table and ipl pre-decryption */
+/* for PSP 3000 file table and ipl pre-decryption */
 u8 keys03G_E[0x10] = 
 {
 	0x4F, 0x44, 0x5C, 0x62, 0xB3, 0x53, 0xC4, 0x30, 
 	0xFC, 0x3A, 0xA4, 0x5B, 0xEC, 0xFE, 0x51, 0xEA
 };
 
-/* for psp go file table and ipl pre-decryption */
+/* for PSP N1000 (Go) file table and ipl pre-decryption */
 u8 keys05G_E[0x10] = 
 {
 	0x5D, 0xAA, 0x72, 0xF2, 0x26, 0x60, 0x4D, 0x1C,
 	0xE7, 0x2D, 0xC8, 0xA3, 0x2F, 0x79, 0xC5, 0x54
 };
 
-/* 5.70 PSPgo kernel*/
+/* 5.70 PSP N1000 (Go) kernel*/
 u8 keys570_5k[0x10] =
 {
 	0x6D, 0x72, 0xA4, 0xBA, 0x7F, 0xBF, 0xD1, 0xF1,
@@ -573,14 +592,14 @@ u8 keys620_e[0x10] =
 	0xF8, 0x60, 0xD3, 0x35, 0x3C, 0xA3, 0x4E, 0xF3
 };
 
-/* PSPgo internal */
+/* PSP N1000 (Go) internal */
 u8 keys620_5[0x10] =
 {
 	0xF1, 0xBC, 0x17, 0x07, 0xAE, 0xB7, 0xC8, 0x30,
 	0xD8, 0x34, 0x9D, 0x40, 0x6A, 0x8E, 0xDF, 0x4E
 };
 
-/* 6.XX PSPgo kernel */
+/* 6.XX PSP N1000 (Go) kernel */
 u8 keys620_5k[0x10] =
 {
 	0x41, 0x8A, 0x35, 0x4F, 0x69, 0x3A, 0xDF, 0x04,
@@ -650,7 +669,7 @@ typedef struct
 
 static TAG_INFO2 g_tagInfo2[] =
 {
-	{ 0xA6E328F0, keys620_upd, 0x5F }, // 5.70, 6.10, 6.20 PSPgo Updater
+	{ 0xA6E328F0, keys620_upd, 0x5F }, // 5.70, 6.10, 6.20 PSP N1000 (Go) Updater
 	
 	{ 0x4C948AF0, keys636_k1, 0x43, 3}, // 6.36
 	{ 0x4C948BF0, keys636_k2, 0x43, 3}, // 6.36 02g
@@ -669,14 +688,14 @@ static TAG_INFO2 g_tagInfo2[] =
 	
 	{ 0x457B28F0, keys620_e, 0x5B },
 	{ 0x457B0CF0, keys620_a, 0x5B },
-	{ 0x380228F0, keys620_5v, 0x5A }, // PSPgo 6.XX vshmain
-	{ 0x4C942AF0, keys620_5k, 0x43 }, // PSPgo 6.XX
-	{ 0x4C9428F0, keys620_5 , 0x43 }, // PSPgo
+	{ 0x380228F0, keys620_5v, 0x5A }, // PSP N1000 (Go) 6.XX vshmain
+	{ 0x4C942AF0, keys620_5k, 0x43 }, // PSP N1000 (Go) 6.XX
+	{ 0x4C9428F0, keys620_5 , 0x43 }, // PSP N1000 (Go)
 	{ 0x4C9422F0, keys600_2, 0x43 }, // 6.00 03g 04g
 	{ 0x4C941EF0, keys600_1, 0x43 },
 	{ 0x4C941DF0, keys620_1, 0x43 },
 	{ 0x4C941CF0, keys620_0, 0x43 },
-	{ 0x4C9429F0, keys570_5k, 0x43 }, // PSPgo 5.70
+	{ 0x4C9429F0, keys570_5k, 0x43 }, // PSP N1000 (Go) 5.70
 	{ 0x4C9419F0, keys505_1, 0x43 },
 	{ 0x4C9418F0, keys505_0, 0x43 },
 	{ 0x457B0BF0, keys505_a, 0x5B },
@@ -896,7 +915,12 @@ static int DecryptPRX2(const u8 *inbuf, u8 *outbuf, u32 size, u32 tag)
 
 int pspDecryptPRX(u8 *data, u32 size, u32 *out_size)
 {
-	int retsize = DecryptPRX1(data, data, size, *(u32 *)&data[0xD0]);
+	int retsize = DecryptPRX1(data, data, size, *(u32 *)&data[0xD0], 1);
+
+	if (retsize <= 0)
+	{
+		retsize = DecryptPRX1(data, data, size, *(u32 *)&data[0xD0], 0);
+	}
 
 	if (retsize <= 0)
 	{

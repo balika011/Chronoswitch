@@ -60,7 +60,7 @@ u32 get_updater_version(u32 is_pspgo)
 	SfoEntry *entries = (SfoEntry *)((char *)sfo_buffer + sizeof(SfoHeader));
 	
 	/* Lets open the updater */
-	char *file = (is_pspgo) ? ("ef0:/PSP/GAME/UPDATE/EBOOT.PBP") : ("ms0:/PSP/GAME/UPDATE/EBOOT.PBP");
+	char *file = (is_pspgo) ? (PSPGO_UPDATER_PATH) : (OTHER_UPDATER_PATH);
 	
 	/* open file */
 	SceUID fd = sceIoOpen(file, PSP_O_RDONLY, 0777);
@@ -167,6 +167,9 @@ int main(int argc, char *argv[])
 	sceKernelDelayThread(1 * 1000 * 1000);
 #endif
 	
+	/* set the devkit */
+	g_devkit_version = sceKernelDevkitVersion();
+	
 	/* check firmware*/
 	printf("Checking firmware... ");
 	
@@ -175,9 +178,6 @@ int main(int argc, char *argv[])
 	
 	/* printf ok message */
 	printf("OK\n");
-	
-	/* set the devkit */
-	g_devkit_version = sceKernelDevkitVersion();
 	
 	/* get the PSP model */
 	int model = execKernelFunction(getModel);
@@ -233,9 +233,9 @@ int main(int argc, char *argv[])
 	if (model != 0 &&			/* PSP PHAT */
 		model != 1 &&			/* PSP SLIM */
 		model != 2 &&			/* PSP 3000 */
-		model != 3 &&			/* PSP 4000 */
-		model != 4 &&			/* PSPgo */
-		model != 10			/* PSP E-1000 (Street) */
+		model != 3 &&			/* PSP 3000v2 */
+		model != 4 &&			/* PSP N1000 (Go) */
+		model != 10			/* PSP E1000 (Street) */
 	)
 	{
 		/* unsupported */
@@ -278,7 +278,8 @@ int main(int argc, char *argv[])
 	/* get the updater version */
 	u32 upd_ver = get_updater_version(model == 4);
 
-	if ((model == 10) && (upd_ver < 0x660)) {
+	if (model == 10 && upd_ver < 0x660)
+	{
 		printf("This app does not support downgrading a PSP 11g below 6.60.\n");
 		ErrorExit(5000, "Exiting in 5 seconds.\n");
 	}

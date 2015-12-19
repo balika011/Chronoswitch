@@ -20,7 +20,7 @@
 PSP_MODULE_INFO("DowngraderCTRL", 0x3007, 1, 0);
 
 /* function pointers */
-int (* PrologueModule)(void *modmgr_param, SceModule *mod) = NULL;
+int (* PrologueModule)(void *modmgr_param, SceModule2 *mod) = NULL;
 STMOD_HANDLER previous = NULL;
 
 typedef struct __attribute__((packed))
@@ -46,17 +46,17 @@ typedef struct __attribute__((packed))
 u32 g_spoof_ver = 0;
 u8 g_sfo_buffer[4 << 10];
 
-int ApplyFirmware(void)
+int ApplyFirmware(SceModule2 *mod)
 {
 	int i;
 	char *fw_data = NULL;
 	u8 device_fw_ver[4];
 	u32 pbp_header[0x28/4];
 	SfoHeader *header = (SfoHeader *)g_sfo_buffer;
-    SfoEntry *entries = (SfoEntry *)((char *)g_sfo_buffer + sizeof(SfoHeader));
+	SfoEntry *entries = (SfoEntry *)((char *)g_sfo_buffer + sizeof(SfoHeader));
 	
 	/* Lets open the updater */
-	char *file = (sceKernelGetModel() == 4) ? ("ef0:/PSP/GAME/UPDATE/EBOOT.pbp") : ("ms0:/PSP/GAME/UPDATE/EBOOT.pbp");
+	char *file = (sceKernelGetModel() == 4) ? PSPGO_UPDATER_PATH : OTHER_UPDATER_PATH;
 	
 	/* set k1 */
 	u32 k1 = pspSdkSetK1(0);
@@ -159,6 +159,18 @@ int ApplyFirmware(void)
 		res = 1;
 	}
 
+	/* fix the issue with 6.61 -> 6.60 */
+	if ((sceKernelDevkitVersion() == 0x06060110) && (updater_ver == 0x660)) {
+		_sw(0x3C020606, 0x08801000); //lui	$v0, 0x606
+		_sw(0x03E00008, 0x08801004); //jr	$ra
+		_sw(0x34420010, 0x08801008); //ori	$v0, $v0, 0x10
+
+		//redirect sceKernelDevkitVersion in updater module
+		REDIRECT_FUNCTION(mod->text_addr + 0x123CD0, 0x08801000);
+
+		ClearCaches();
+	}
+
 	/* do spoof! */
 	g_spoof_ver = updater_ver;
 	pspSdkSetK1(k1);
@@ -234,7 +246,7 @@ int sceUtilsBufferCopyWithRangePatched(void *dst, u32 dst_size, void *src, u32 s
 	return pspUtilsBufferCopyWithRange(dst, dst_size, src, src_size, cmd);
 }
 
-int OnModuleStart(SceModule *mod)
+int OnModuleStart(SceModule2 *mod)
 {
 	if (strcmp(mod->modname, "sceMesgLed") == 0)
 	{
@@ -245,7 +257,7 @@ int OnModuleStart(SceModule *mod)
 	else if (strcmp(mod->modname, "updater") == 0)
 	{
 		/* ok, lets see what we're doing here! */
-		int res = ApplyFirmware();
+		int res = ApplyFirmware(mod);
 		
 		/* check for success */
 		if (res >= 0)
@@ -286,7 +298,7 @@ int OnModuleStart(SceModule *mod)
 	return 0;
 }
 
-int PrologueModulePatched(void *modmgr_param, SceModule *mod)
+int PrologueModulePatched(void *modmgr_param, SceModule2 *mod)
 {
 	/* modmgr_param has changed from 1.50 so I have no included the structure defintion, for an updated version a re-reverse of 6.30 modulemgr is required */
 	int res = PrologueModule(modmgr_param, mod);
@@ -305,7 +317,7 @@ int PrologueModulePatched(void *modmgr_param, SceModule *mod)
 static void PatchModuleManager(void)
 {
 	/* find the modulemgr module */
-	SceModule *mod = sceKernelFindModuleByName("sceModuleManager");
+	SceModule2 *mod = (SceModule2 *)sceKernelFindModuleByName("sceModuleManager");
 	u32 text_addr = mod->text_addr;
 	
 	/* link the original calls before hook */
@@ -318,7 +330,7 @@ static void PatchModuleManager(void)
 static void PatchLoadCore(void)
 {
 	/* Find the loadcore module */
-	SceModule *mod = sceKernelFindModuleByName("sceLoaderCore");
+	SceModule2 *mod = (SceModule2 *)sceKernelFindModuleByName("sceLoaderCore");
 	u32 text_addr = mod->text_addr;
 	
 	/* Relink the memlmd calls (that reboot destroyed) */

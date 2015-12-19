@@ -19,7 +19,7 @@ void sceKernelIcacheInvalidateAll(void);
 
 int isValidUserAddress(void *addr)
 {
-	return ((u32)((u32)addr - 0x08800000) < (24 << 20)) ? (1) : (0);
+	return (u32) addr - 0x08800000 < 24 << 20;
 }
 
 void KClearCaches(void)

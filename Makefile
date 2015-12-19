@@ -5,7 +5,6 @@ clean: clean_prx
 
 clean_prx:
 	make -C downgrade_ctrl -f Makefile clean
-	make -C downgrade660_ctrl -f Makefile clean
 	
 signed: clean_prx mk_downgrade_ctrl
 	make -f Makefile.signed
@@ -29,7 +28,6 @@ copy_src:
 	
 mk_downgrade_ctrl:
 	make -C downgrade_ctrl -f Makefile
-	make -C downgrade660_ctrl -f Makefile
 
 signed_release: clean clean_prx remove_dir create_dir copy_src signed
 	cp EBOOT.PBP RELEASE\PSP\GAME\Downgrader\EBOOT.PBP
