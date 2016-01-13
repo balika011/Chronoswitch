@@ -41,7 +41,7 @@ int (* sceReboot)(void *reboot_param, void *exec_param, int api, int initial_rnd
 int sceBootLfatOpenPatched(char *path)
 {
 	/* check the path for our virtual module */
-	if (strcmp(path, "/kd/strange.charm") == 0)
+	if (strcmp(path, "/chrono/strange.charm") == 0)
 	{
 		/* set seek to 0 and set to opened and return success */
 		g_module_seek = 0;
@@ -182,7 +182,7 @@ u32 sceKernelCheckPspConfigPatched(void *btcnf_data, u32 size, int flag)
 	if (header->signature == 0x0F803001)
 	{
 		/* insert the module path into the config */
-		InsertModuleBtcnf("/kd/strange.charm", "/kd/init.prx", btcnf_data, &nsize, (BOOTLOAD_VSH | BOOTLOAD_GAME | BOOTLOAD_POPS | BOOTLOAD_UPDATER | BOOTLOAD_UMDEMU | BOOTLOAD_MLNAPP));
+		InsertModuleBtcnf("/chrono/strange.charm", "/kd/init.prx", btcnf_data, &nsize, (BOOTLOAD_VSH | BOOTLOAD_GAME | BOOTLOAD_POPS | BOOTLOAD_UPDATER | BOOTLOAD_UMDEMU | BOOTLOAD_MLNAPP));
 	}
 	
 	/* return the new size */
@@ -236,6 +236,8 @@ int LoadCoreModuleStart631(int (* module_bootstart)(u32 argsize, void *argp), vo
 	/* patch calls to the unsigncheck routines */
 	MAKE_CALL(text_addr + 0x6954, VerifySigncheckPatched);
 	
+	KClearCaches();
+
 	/* call the loadcore bootstart */
 	return module_bootstart(8, argp);
 }
@@ -255,6 +257,8 @@ int LoadCoreModuleStart635(int (* module_bootstart)(u32 argsize, void *argp), vo
 	/* patch calls to the unsigncheck routines */
 	MAKE_CALL(text_addr + 0x5CC8, VerifySigncheckPatched);
 	
+	KClearCaches();
+
 	/* call the loadcore bootstart */
 	return module_bootstart(8, argp);
 }
@@ -274,6 +278,8 @@ int LoadCoreModuleStart638(int (* module_bootstart)(u32 argsize, void *argp), vo
 	/* patch calls to the unsigncheck routines */
 	MAKE_CALL(text_addr + 0x5CC8, VerifySigncheckPatched);
 	
+	KClearCaches();
+
 	/* call the loadcore bootstart */
 	return module_bootstart(8, argp);
 }
@@ -293,6 +299,8 @@ int LoadCoreModuleStart660(int (* module_bootstart)(u32 argsize, void *argp), vo
 	/* patch calls to the unsigncheck routines */
 	MAKE_CALL(text_addr + 0x5994, VerifySigncheckPatched);
 	
+	KClearCaches();
+
 	/* call the loadcore bootstart */
 	return module_bootstart(8, argp);
 }

@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <systemctrl.h>
+#include <libinfinity.h>
 
 #include "utils.h"
 #include "patch_table.h"
@@ -246,11 +247,26 @@ int sceUtilsBufferCopyWithRangePatched(void *dst, u32 dst_size, void *src, u32 s
 	return pspUtilsBufferCopyWithRange(dst, dst_size, src, src_size, cmd);
 }
 
+int (* sceLflashFatfmtStartFatfmtOriginal)(int argc, char *argv[]) = NULL;
+int sceLflashFatfmtStartFatfmtPatched(int argc, char *argv[])
+{
+	infSetRedirectionStatus(0);
+	ClearCaches();
+
+	return sceLflashFatfmtStartFatfmtOriginal(argc, argv);
+}
+
 int OnModuleStart(SceModule2 *mod)
 {
 	if (strcmp(mod->modname, "sceMesgLed") == 0)
 	{
 		PatchMesgled(mod->text_addr);
+		ClearCaches();
+	}
+	else if (strcmp(mod->modname, "sceLflashFatfmtUpdater") == 0)
+	{
+		PatchSyscall(FindFunc("sceLflashFatfmtUpdater", "LflashFatfmt", 0xB7A424A4), sceLflashFatfmtStartFatfmtPatched);
+		sceLflashFatfmtStartFatfmtOriginal = FindFunc("sceLflashFatfmtUpdater", "LflashFatfmt", 0xB7A424A4);
 		ClearCaches();
 	}
 	

@@ -28,7 +28,7 @@ PSP_MODULE_INFO("Chronoswitch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_VFPU);
 PSP_HEAP_SIZE_KB(3 << 10);
 
-#define DOWNGRADER_VER	("6.1")
+#define DOWNGRADER_VER	("X7.0")
 
 typedef struct __attribute__((packed))
 {
@@ -49,7 +49,7 @@ typedef struct __attribute__((packed))
         unsigned short valofs; // 12
         short unknown; // 16
 } SfoEntry;
-	
+
 u32 get_updater_version(u32 is_pspgo)
 {
 	int i;
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 		"\t"	"6.61 Support added by qwikrazor87" "\n" "\n"
 		
 		"Web:" "\n"
-		"\t"	"http://lolhax.org" "\n" "\n"
+		"\t"	"https://lolhax.org" "\n" "\n"
 		, DOWNGRADER_VER, __DATE__, __TIME__);
 
 #ifdef HBL_SUKKIRI	
@@ -274,7 +274,28 @@ int main(int argc, char *argv[])
 			ErrorExit(5000, "Error deleting [Resume Game]. Exiting for safety reasons.\n");
 		}
 	}
-	
+
+	int isInfinity = !(infGetVersion() & 0x80000000);
+	if (isInfinity)
+	{
+		printf("\n" "Your PSP is running Infinity and reflashing is slightly more risky. Proceed? (X = Yes, R = No)\n");
+
+		while (1)
+		{
+			sceCtrlPeekBufferPositive(&pad_data, 1);
+
+			/* filter out previous buttons */
+			cur_buttons = pad_data.Buttons & ~prev_buttons;
+			prev_buttons = pad_data.Buttons;
+
+			/* check for cross */
+			if (cur_buttons & PSP_CTRL_CROSS)
+				break;
+			else if (cur_buttons & PSP_CTRL_RTRIGGER)
+				ErrorExit(5000, "Exiting in 5 seconds.\n");
+		}
+	}
+
 	/* get the updater version */
 	u32 upd_ver = get_updater_version(model == 4);
 
